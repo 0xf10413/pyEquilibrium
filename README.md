@@ -1,0 +1,3 @@
+# pyEquilibrium
+
+Depends on pygame
