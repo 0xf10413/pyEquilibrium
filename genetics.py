@@ -4,6 +4,8 @@ import operator
 import copy
 from random import uniform,choice
 
+from application import LearningAlgorithm
+
 from settings import (
         POPULATION_SIZE,
         NUM_PARAMETERS,
@@ -45,7 +47,7 @@ class Individual(object):
         self.fitness += delta_t
         return act
 
-class GeneticAlgorithm(object):
+class GeneticAlgorithm(LearningAlgorithm):
     def __init__(self):
         self.people = [Individual() for i in range(POPULATION_SIZE)]
         # uncomment below to get the best player we found

@@ -25,11 +25,12 @@ class Application(object):
     Classe générale d'application
     Se construit à partir d'un plateau de jeu et d'un algo d'apprentissage
     """
-    def __init__(self, board, learning_algorithm=None):
+    def __init__(self, board, learning_algorithm):
+        if not isinstance(learning_algorithm, LearningAlgorithm):
+            raise ValueError("This is not a LearningAlgorithm : {}".
+                    format(learning_algorithm))
         self.learning_algorithm = learning_algorithm
         self.board = board
-        if learning_algorithm is None:
-            print("No learning algorithm, launching in full user mode")
 
         self.screen = pg.display.set_mode(WINDOW_SIZE, DOUBLEBUF)
         self.running = True
@@ -72,14 +73,14 @@ class Application(object):
             # Récupérer l'avis de l'algorithme sur la situation
             reaction = 0
             text_to_print = ""
-            if self.learning_algorithm is not None:
+            if not isinstance(self.learning_algorithm, DummyLearningAlgorithm):
                 reaction, text_to_print = self.learning_algorithm.act(X, delta_t)
             else:
                 if pg.key.get_pressed()[pg.K_LEFT] != pg.key.get_pressed()[pg.K_RIGHT]:
-                    if pg.key.get_pressed()[pg.K_LEFT]:
-                        reaction = .1
-                    elif pg.key.get_pressed()[pg.K_RIGHT]:
-                        reaction = -.1
+                       if pg.key.get_pressed()[pg.K_LEFT]:
+                           reaction = 10
+                       elif pg.key.get_pressed()[pg.K_RIGHT]:
+                           reaction = -10
 
             # Avancer la simulation d'un atome de temps
             # ou détecter un Game Over
@@ -91,8 +92,6 @@ class Application(object):
             text_to_print = self.font.render(text_to_print, 1, CYAN)
             self.board.redraw(self.screen, text_to_print)
             self.screen.blit(text_to_print, text_to_print.get_rect())
-
-
 
             pg.display.flip()
 
@@ -162,5 +161,29 @@ class LearningAlgorithm(object):
     """
     Interface représentant un algorithme d'apprentissage
     """
-    pass
+    def act(self, X, delta_t):
+        """
+        Effectue une itération d'apprentissage, étant donné l'entrée X,
+        sachant qu'il s'est écoulé delta_t depuis le dernier appel
 
+        Valeur de retour attendue : un coupe (r, text) où r est l'output
+        à injecter dans le plateau de jeu, et text un texte à afficher
+        sur la fenêtre
+        """
+        raise NotImplementedError("Calling abstract method")
+
+    def inform_died(self):
+        """
+        Indique à l'algorithme qu'un GameOver a été atteint
+        """
+        raise NotImplementedError("Calling abstract method")
+
+class DummyLearningAlgorithm(LearningAlgorithm):
+    """
+    Un algorithme d'apprentissage trivial, qui ne fait rien
+    """
+    def act(self, X, delta_t):
+        return (0, "Player")
+
+    def inform_died(self):
+        pass
