@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
-
 import numpy as np
 import operator
 import copy
 from random import uniform,choice
 
-RAND_MIN = -25
-RAND_MAX = 25
-MUTATION_EPS = 1
-POPULATION_SIZE = 50
-MAX_GEN = 30
-#ACT_THRESHOLD = 30
-
-NUM_PARAMETERS = 9
-REF_VECTOR = [ 1,  -7,  -6,  -1, -20,   2, -13,  -2, -10]
+from settings import (
+        POPULATION_SIZE,
+        NUM_PARAMETERS,
+        RAND_MIN,
+        RAND_MAX,
+        MAX_GENERATION,
+        REF_VECTOR,
+        MUTATION_EPS,
+        )
 
 class Individual(object):
     def __init__(self, coeffs=None):
@@ -35,47 +34,53 @@ class Individual(object):
         return result
 
 
-    def crossover(self,other):
+    def crossover(self, other):
         result = Individual()
         result.coeffs = self.fitness*self.coeffs + other.fitness*other.coeffs
         result.coeffs = 1/(self.fitness + other.fitness) * result.coeffs
         return result
 
-    def ACT(self, inputs):
+    def ACT(self, inputs, delta_t):
         act = np.dot(self.coeffs, inputs)
-        #if abs(act) < ACT_THRESHOLD:
-        #    return "Nothing"
-        #if  act > 0:
-        #    return "Left"
-        #else:
-        #    return "Right"
+        self.fitness += delta_t
         return act
 
-    def die(self, lifetime):
-        self.fitness = lifetime
-
-class Population(object):
+class GeneticAlgorithm(object):
     def __init__(self):
         self.people = [Individual() for i in range(POPULATION_SIZE)]
         # uncomment below to get the best player we found
         #self.people[0].coeffs = np.array(REF_VECTOR.copy())
         self.generation = 1
+        self.current_people_index = 0
 
+    def inform_died(self):
+        """
+        Si cette fonction est appelée, c'est que le jeu vient de se solder par un gameover
+        Le plateau va se réinitialiser, l'algorithme doit réagir
+        """
+        self.current_people_index += 1
 
-    def mega_iterator(self):
+    def act(self, X, delta_t):
         """
-        Returns an interator that can be used to iterate over ALL the population,
-        and the future generations, too
+        One tick for the algorithm
+        Tries to advance the current candidate, or else goes to the next one
         """
-        while self.generation < MAX_GEN:
-            for i in self.people:
-                yield i
+        if self.generation > MAX_GENERATION:
+            print("The end !")
+            print("Best player:", self.best, "(", self.best.fitness,")")
+            return 0,"The end"
+
+        if self.current_people_index < POPULATION_SIZE:
+            player = self.people[self.current_people_index]
+            text_to_print = player.origin + str(player.fitness)
+            return player.ACT(X, delta_t), text_to_print
+        else:
+            self.current_people_index = 0
             self.next()
             print("=======================")
             print(" End of generation ", self.generation)
             print("=======================")
-        print("The end !")
-        print("Best player:", self.best, "(", self.best.fitness,")")
+            return self.act(X, delta_t)
 
     def next(self):
         """
@@ -126,4 +131,3 @@ class Population(object):
         print("Max = ", self.people[0].fitness, " ; min = ", self.people[-1].fitness)
         self.people = next_population
         self.generation += 1
-
