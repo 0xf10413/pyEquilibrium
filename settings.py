@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 """
 Options générales pour le programme
 """

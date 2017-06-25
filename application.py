@@ -1,9 +1,14 @@
-#!/usr/bin/env python3
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 from math import pi
 
 import pygame as pg
 from pygame.locals import DOUBLEBUF
 import numpy as np
+
+from board import Board
+from learning_algorithm import LearningAlgorithm
 
 from boarditems import HighBar, LowBar, HighBall, LowBall, GameOverException
 from settings import (
@@ -38,9 +43,18 @@ class Application(object):
         pg.font.init()
         self.font = pg.font.Font(None, 36)
         self.opened = True
+        self.total_reward = 0
+
 
     def main_loop(self):
-        while self.opened:
+
+        for episode in range(self.learning_algorithm.episodes_number):
+
+            print("Episode : " + str(episode) + " Replay Buffer " + str(self.learning_algorithm.buff.count()))
+
+            # reset de l'environnement
+            self.board = Board()
+
             # Mesure de l'avancement depuis le dernier tour de boucle
             # Bloquer si on est en avance
             delta_t = 0
@@ -69,121 +83,87 @@ class Application(object):
 
             # Récupérer les prochaines entrées à donner à l'algorithme d'apprentissage
             X = self.board.fetch_state()
+            s_t = X
+            print(s_t.shape)
 
-            # Récupérer l'avis de l'algorithme sur la situation
-            reaction = 0
-            text_to_print = ""
-            if not isinstance(self.learning_algorithm, DummyLearningAlgorithm):
-                reaction, text_to_print = self.learning_algorithm.act(X, delta_t)
-            else:
-                if pg.key.get_pressed()[pg.K_LEFT] != pg.key.get_pressed()[pg.K_RIGHT]:
-                       if pg.key.get_pressed()[pg.K_LEFT]:
-                           reaction = 10
-                       elif pg.key.get_pressed()[pg.K_RIGHT]:
-                           reaction = -10
+            self.total_reward = 0
 
-            # Avancer la simulation d'un atome de temps
-            # ou détecter un Game Over
-            if not self.board.tick(reaction, delta_t):
-                self.board = Board()
-                self.learning_algorithm.inform_died()
-
-            # Redessiner la scène
-            text_to_print = self.font.render(text_to_print, 1, CYAN)
-            self.board.redraw(self.screen, text_to_print)
-            self.screen.blit(text_to_print, text_to_print.get_rect())
-
-            pg.display.flip()
+            for step in range(self.learning_algorithm.steps_per_episode):
 
 
-class Board(object):
-    """
-    Classe représentant un plateau de jeu
-    """
-    def __init__(self):
-        self.high_bar = HighBar(WINDOW_WIDTH/2, WINDOW_HEIGHT/4,
-                HIGH_BAR_SIZE[0], HIGH_BAR_SIZE[1])
-        self.high_ball = HighBall(WINDOW_WIDTH/2, WINDOW_HEIGHT/5)
-        self.low_bar = LowBar(WINDOW_WIDTH/2, 3*WINDOW_HEIGHT/4,
-                LOW_BAR_SIZE[0], LOW_BAR_SIZE[1])
-        self.low_ball = LowBall(WINDOW_WIDTH/2-LOW_BALL_RADIUS,
-                3*WINDOW_HEIGHT/4-LOW_BALL_RADIUS-LOW_BAR_SIZE[1],
-                LOW_BALL_RADIUS + LOW_BAR_SIZE[1]/2)
+                # initialisation des variables d'apprentissage propores à chaque tour
+                loss = 0
+                self.learning_algorithm.epsilon -= 1.0 / self.learning_algorithm.EXPLORE
+                a_t = np.zeros([1,self.learning_algorithm.action_dim])
+                noise_t = np.zeros([1,self.learning_algorithm.action_dim])
 
-    def fetch_state(self):
-        low_ball_x = self.low_ball.center[0]
-        low_ball_y = self.low_ball.center[1]
-        low_ball_vx = self.low_ball.speed[0]
-        low_ball_vy = self.low_ball.speed[1]
+                a_t_original = self.learning_algorithm.actor.model.predict(s_t.reshape(12,), verbose=0) # to change
 
-        high_ball_x = self.high_ball.center[0]
-        high_ball_y = self.high_ball.center[1]
-        high_ball_vx = self.high_ball.speed[0]
-        high_ball_vy = self.high_ball.speed[1]
+                noise_t[0][0] = train_indicator * max(self.learning_algorithm.epsilon, 0) * OU.function(a_t_original[0][0], 0, 0.15, 0.20)
 
-        high_bar_x = self.high_bar.center[0]
-        high_bar_y = self.high_bar.center[1]
-        low_bar_x = self.low_bar.center[0]
-        low_bar_y = self.low_bar.center[1]
+                a_t[0][0] = a_t_original[0][0] + noise_t[0][0]
 
-        theta = self.low_bar.theta
-        X = np.array([high_ball_x - high_bar_x,  \
-                100*max(high_ball_vy, 0)*(high_ball_x - high_bar_x)/ \
-                    (high_ball_y - high_bar_y - 6)**3, \
-                high_ball_vx, high_ball_vy,\
-                low_ball_x - low_bar_x, low_ball_y - low_bar_y, \
-                low_ball_vx, low_ball_vy, theta])
-        return X
+                # noise à changer en fonction des inputs, un peu du pif
+
+                # if not isinstance(self.learning_algorithm, DummyLearningAlgorithm):
+                #     reaction, text_to_print = self.learning_algorithm.act(X, delta_t)
+                # else:
+                #     if pg.key.get_pressed()[pg.K_LEFT] != pg.key.get_pressed()[pg.K_RIGHT]:
+                #            if pg.key.get_pressed()[pg.K_LEFT]:
+                #                reaction = 10
+                #            elif pg.key.get_pressed()[pg.K_RIGHT]:
+                #                reaction = -10
+                reaction = a_t[0]
+
+                # Avancer la simulation d'un atome de temps
+                # ou détecter un Game Over
+                if not self.board.tick(reaction, delta_t):
+                    self.board = Board()
+                    self.learning_algorithm.inform_died()
 
 
-    def tick(self, reaction, delta_t):
-        """
-        Met à jour le plateau de jeu selon l'input reaction, sachant qu'il s'est
-        écoulé delta_t depuis le dernier appel
-        """
-        try:
-            self.low_bar.rotate(reaction*pi/WINDOW_WIDTH, delta_t)
-            self.high_bar.move(reaction, delta_t)
-            self.low_ball.move(self.low_bar.theta, self.low_bar.center, delta_t)
-            self.high_ball.move(self.high_bar, delta_t)
-        except GameOverException:
-            return False
-        return True
 
-    def redraw(self, screen, text_to_print):
-        screen.fill(BLACK)
-        pg.draw.polygon(screen, WHITE, self.low_bar.points)
-        pg.draw.polygon(screen, WHITE, self.high_bar.points)
-        screen.blit(self.high_ball.surface, self.high_ball.get_rect())
-        screen.blit(self.low_ball.surface, self.low_ball.get_rect(self.low_bar.theta))
+                X1 = self.board.fetch_state()
+                r_t = self.learning_algorithm.reward()
+                s_t1 = X1
 
-class LearningAlgorithm(object):
-    """
-    Interface représentant un algorithme d'apprentissage
-    """
-    def act(self, X, delta_t):
-        """
-        Effectue une itération d'apprentissage, étant donné l'entrée X,
-        sachant qu'il s'est écoulé delta_t depuis le dernier appel
+                self.learning_algorithm.buff.add(s_t, a_t[0], r_t, s_t1, done) #Add replay buffer
 
-        Valeur de retour attendue : un coupe (r, text) où r est l'output
-        à injecter dans le plateau de jeu, et text un texte à afficher
-        sur la fenêtre
-        """
-        raise NotImplementedError("Calling abstract method")
+                # do the batch update
+                batch = self.learning_algorithm.buff.getBatch(BATCH_SIZE)
+                states = np.asarray([e[0] for e in batch])
+                actions = np.asarray([e[1] for e in batch])
+                rewards = np.asarray([e[2] for e in batch])
+                new_states = np.asarray([e[3] for e in batch])
+                dones = np.asarray([e[4] for e in batch])
+                y_t = np.zeros((states.shape[0],1))
 
-    def inform_died(self):
-        """
-        Indique à l'algorithme qu'un GameOver a été atteint
-        """
-        raise NotImplementedError("Calling abstract method")
+                for k in range(len(batch)):
+                    if dones[k]:
+                        y_t[k] = rewards[k]
+                    else:
+                        y_t[k] = rewards[k] + GAMMA*target_q_values[k]
 
-class DummyLearningAlgorithm(LearningAlgorithm):
-    """
-    Un algorithme d'apprentissage trivial, qui ne fait rien
-    """
-    def act(self, X, delta_t):
-        return (0, "Player")
+                loss += self.learning_algorithm.critic.model.train_on_batch([states,actions], y_t)
+                a_for_grad = self.learning_algorithm.actor.model.predict(states)
+                grads = self.learning_algorithm.critic.gradients(states, a_for_grad)
+                self.learning_algorithm.actor.train(states, grads)
+                self.learning_algorithm.actor.target_train()
+                self.learning_algorithm.critic.target_train()
 
-    def inform_died(self):
-        pass
+                self.total_reward += r_t
+                s_t = s_t1
+
+                print("Episode", i, "Step", step, "Action", a_t, "Reward", r_t, "Loss", loss)
+
+
+                # Redessiner la scène
+                text_to_print = self.font.render(text_to_print, 1, CYAN)
+                self.board.redraw(self.screen, text_to_print)
+                self.screen.blit(text_to_print, text_to_print.get_rect())
+
+                pg.display.flip()
+
+            print("TOTAL REWARD @ " + str(i) +"-th Episode  : Reward " + str(total_reward))
+            print("Total Step: " + str(step))
+            print("")
