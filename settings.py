@@ -9,7 +9,7 @@ Options générales pour le programme
 ##############################
 
 # Algo génétique : accélération de l'algorithme en évitant le rendu à < 25fps ?
-WITH_FASTER = False
+WITH_FASTER = True
 
 # Algo génétique : teste-t-on les éléments conservés de la génération précédente ?
 WITHOUT_KEPT = False

@@ -11,13 +11,16 @@ from pygame.locals import *
 
 from application import Application
 from board import Board
-from learning_algorithm import LearningAlgorithm
+from application import DummyLearningAlgorithm
+from genetics import GeneticAlgorithm
+from learning_algorithm import DDPGAlgorithm
 
-#random.seed(1) # Fixer l'aléatoire
+random.seed(1) # Fixer l'aléatoire
 
 # Pick one !
 #algorithm = DummyLearningAlgorithm() # For human players
-algorithm = LearningAlgorithm() # For DDPG algo
+algorithm = DDPGAlgorithm() # For DDPG algo
+#algorithm = GeneticAlgorithm() # For genetic algo
 board = Board()
 
 application = Application(board, algorithm)

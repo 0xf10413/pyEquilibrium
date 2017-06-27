@@ -59,17 +59,17 @@ class Board(object):
 
         theta = self.low_bar.theta
         X = np.array([low_ball_x/WINDOW_WIDTH,
-                      low_ball_y/WINDOW_HEIGHT,
-                      low_ball_vx,
-                      low_ball_vy,
+            low_ball_y/WINDOW_HEIGHT,
+            low_ball_vx,
+            low_ball_vy,
 
-                      high_ball_x/WINDOW_WIDTH,
-                      high_ball_y/WINDOW_HEIGHT,
-                      high_ball_vx,
-                      high_ball_vy,
+            high_ball_x/WINDOW_WIDTH,
+            high_ball_y/WINDOW_HEIGHT,
+            high_ball_vx,
+            high_ball_vy,
 
-                      theta/pi
-                     ])
+            theta/pi
+        ])
         return X
 
 
