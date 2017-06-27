@@ -10,12 +10,12 @@ from keras.layers.normalization import BatchNormalization
 from keras.optimizers import Adam
 import tensorflow as tf
 import keras.backend as K
-# 
+#
 # HIDDEN1_UNITS = 300
 # HIDDEN2_UNITS = 600
 
 class ActorNetwork(object):
-    
+
     def __init__(self, sess, state_size, action_size, BATCH_SIZE, TAU, LEARNING_RATE):
         self.sess = sess
         self.BATCH_SIZE = BATCH_SIZE
@@ -25,8 +25,8 @@ class ActorNetwork(object):
         K.set_session(sess)
 
         #Now create the model
-        self.model , self.weights, self.state = self.create_actor_network(state_size, action_size)   
-        self.target_model, self.target_weights, self.target_state = self.create_actor_network(state_size, action_size) 
+        self.model , self.weights, self.state = self.create_actor_network(state_size, action_size)
+        self.target_model, self.target_weights, self.target_state = self.create_actor_network(state_size, action_size)
         self.action_gradient = tf.placeholder(tf.float32,[None, action_size])
         self.params_grad = tf.gradients(self.model.output, self.weights, -self.action_gradient)
         grads = zip(self.params_grad, self.weights)
@@ -47,26 +47,25 @@ class ActorNetwork(object):
         self.target_model.set_weights(actor_target_weights)
 
     def create_actor_network(self, state_size,action_dim):
-        print("Now we build the actor cnn model") 
+        print("Now we build the actor cnn model")
 
         S = Input(shape=state_size)
-        C1 = Convolution2D(32, 8, 8, subsample=(4, 4), activation='relu', init='he_uniform')(S)
-        C2 = Convolution2D(64, 4, 4, subsample=(2, 2), activation='relu', init='he_uniform')(C1)
-        C3 = Convolution2D(64, 3, 3, subsample=(1, 1), activation='relu', init='he_uniform')(C2)
-        F = Flatten()(C3)
-        D1 = Dense(30, activation='relu', init='he_uniform')(F)
-        D11 = Dense(30, activation='relu', init='he_uniform')(D1)
+        # C1 = Convolution2D(32, 8, 8, subsample=(4, 4), activation='relu', init='he_uniform')(S)
+        # C2 = Convolution2D(64, 4, 4, subsample=(2, 2), activation='relu', init='he_uniform')(C1)
+        # C3 = Convolution2D(64, 3, 3, subsample=(1, 1), activation='relu', init='he_uniform')(C2)
+        # F = Flatten()(C3)
+        D1 = Dense(50, activation='relu', init='he_uniform')(S)
+        D11 = Dense(25, activation='relu', init='he_uniform')(D1)
         D2 = Dense(action_dim, activation='tanh',init=lambda shape, name: uniform(shape, scale=3e-4, name=name))(D11)
         model = Model(input=S, output=D2)
-        
+
         # version non convolutionnelle, pour TORCS
-        # S = Input(shape=[state_size])   
+        # S = Input(shape=[state_size])
         # h0 = Dense(HIDDEN1_UNITS, activation='relu')(S)
         # h1 = Dense(HIDDEN2_UNITS, activation='relu')(h0)
-        # Steering = Dense(1,activation='tanh',init=lambda shape, name: normal(shape, scale=1e-4, name=name))(h1)  
-        # Acceleration = Dense(1,activation='sigmoid',init=lambda shape, name: normal(shape, scale=1e-4, name=name))(h1)   
-        # Brake = Dense(1,activation='sigmoid',init=lambda shape, name: normal(shape, scale=1e-4, name=name))(h1) 
-        # V = merge([Steering,Acceleration,Brake],mode='concat')          
+        # Steering = Dense(1,activation='tanh',init=lambda shape, name: normal(shape, scale=1e-4, name=name))(h1)
+        # Acceleration = Dense(1,activation='sigmoid',init=lambda shape, name: normal(shape, scale=1e-4, name=name))(h1)
+        # Brake = Dense(1,activation='sigmoid',init=lambda shape, name: normal(shape, scale=1e-4, name=name))(h1)
+        # V = merge([Steering,Acceleration,Brake],mode='concat')
         # model = Model(input=S,output=V)
         return model, model.trainable_weights, S
-

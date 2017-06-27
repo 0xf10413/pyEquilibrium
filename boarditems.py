@@ -17,6 +17,9 @@ from settings import (
         LOW_BALL_RADIUS,
         WITH_SATURATE,
         )
+
+import random as rd
+
 """
 Divers objets utilisables sur le plateau de jeu
 Convention utilisée pour représenter les points d'une barre
@@ -97,8 +100,8 @@ class LowBall(object):
     """
     def __init__(self, x, y, offset):
         self.surface = pg.Surface((LOW_BALL_RADIUS*2, LOW_BALL_RADIUS*2))
-        self.center = [x, y]
-        self.prev_center = [x, y]
+        self.center = np.array([x, y])
+        self.prev_center = np.array([x, y])
         self.offset = offset
 
         self.contact = True
@@ -162,7 +165,7 @@ class LowBall(object):
             self.speed[0] = (new_center[0] - self.center[0])/dt
             self.speed[1] = (new_center[1] - self.center[1])/dt
 
-        self.prev_center = self.center.copy()
+        self.prev_center = np.array(self.center).copy()
         self.center = new_center
 
     def move_without_contact(self, dt):
@@ -171,7 +174,7 @@ class LowBall(object):
 
         self.speed[0] = (new_center_x - self.center[0])/dt
         self.speed[1] = (new_center_y - self.center[1])/dt
-        self.prev_center = self.center.copy()
+        self.prev_center = np.array(self.center).copy()
         self.center = [new_center_x, new_center_y]
 
     def rebound(self, theta, X_p, dt):
@@ -189,7 +192,7 @@ class LowBall(object):
 
         #print("Rebound!")
         self.speed = [new_v_x, new_v_y]
-        self.prev_center = self.center.copy()
+        self.prev_center = np.array(self.center).copy()
         self.center[0] = self.center[0] + new_v_x*dt
         self.center[1] = self.center[1] + new_v_y*dt
         return True
@@ -201,12 +204,12 @@ class HighBall(object):
     """
     def __init__(self, x, y):
         self.surface = pg.Surface((HIGH_BALL_RADIUS*2, HIGH_BALL_RADIUS*2))
-        self.center = [x, y]
-        self.prev_center = [x, y]
+        self.center = np.array([x, y])
+        self.prev_center = np.array([x, y])
 
         self.radius = HIGH_BALL_RADIUS
         #self.speed = [random.uniform(.03, .1), random.uniform(-.1, .1)]
-        self.speed = [.12, .05]
+        self.speed = [0.02*rd.uniform(-1,1), .05*rd.uniform(-1,1)]
         pg.draw.circle(self.surface, WHITE, (int(self.radius), int(self.radius)), \
                 int(self.radius))
 

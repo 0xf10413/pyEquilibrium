@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+from __future__ import division
 
 from math import pi
 
@@ -37,6 +38,9 @@ class Board(object):
                 3*WINDOW_HEIGHT/4-LOW_BALL_RADIUS-LOW_BAR_SIZE[1],
                 LOW_BALL_RADIUS + LOW_BAR_SIZE[1]/2)
 
+        # pour la prise en compte du passé
+        self.states_list = []
+
     def fetch_state(self):
         low_ball_x = self.low_ball.center[0]
         low_ball_y = self.low_ball.center[1]
@@ -54,20 +58,17 @@ class Board(object):
         low_bar_y = self.low_bar.center[1]
 
         theta = self.low_bar.theta
-        X = np.array([low_ball_x,
-                      low_ball_y,
+        X = np.array([low_ball_x/WINDOW_WIDTH,
+                      low_ball_y/WINDOW_HEIGHT,
                       low_ball_vx,
                       low_ball_vy,
-                      high_ball_x,
-                      low_ball_vy,
-                      high_ball_x,
-                      high_ball_y,
+
+                      high_ball_x/WINDOW_WIDTH,
+                      high_ball_y/WINDOW_HEIGHT,
                       high_ball_vx,
                       high_ball_vy,
-                      high_bar_x,
-                      high_bar_y,
-                      low_bar_x,
-                      low_bar_y
+
+                      theta/pi
                      ])
         return X
 

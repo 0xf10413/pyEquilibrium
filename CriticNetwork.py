@@ -26,8 +26,8 @@ class CriticNetwork(object):
         K.set_session(sess)
 
         #Now create the model
-        self.model, self.action, self.state = self.create_critic_network(state_size, action_size)  
-        self.target_model, self.target_action, self.target_state = self.create_critic_network(state_size, action_size)  
+        self.model, self.action, self.state = self.create_critic_network(state_size, action_size)
+        self.target_model, self.target_action, self.target_state = self.create_critic_network(state_size, action_size)
         self.action_grads = tf.gradients(self.model.output, self.action)  #GRADIENTS for policy update
         self.sess.run(tf.initialize_all_variables())
 
@@ -46,38 +46,38 @@ class CriticNetwork(object):
 
     def create_critic_network(self, state_size,action_dim):
         print("Now we build the critic cnn model")
-        
+
         S = Input(shape=state_size)
-        C1 = Convolution2D(32, 8, 8, subsample=(4, 4), activation='relu', init='he_uniform')(S)
-        C2 = Convolution2D(64, 4, 4, subsample=(2, 2), activation='relu', init='he_uniform')(C1)
-        C3 = Convolution2D(64, 3, 3, subsample=(1, 1), activation='relu', init='he_uniform')(C2)
-        F = Flatten()(C3)
-        D1 = Dense(100, activation='relu', init='he_uniform')(F)
+        # C1 = Convolution2D(32, 8, 8, subsample=(4, 4), activation='relu', init='he_uniform')(S)
+        # C2 = Convolution2D(64, 4, 4, subsample=(2, 2), activation='relu', init='he_uniform')(C1)
+        # C3 = Convolution2D(64, 3, 3, subsample=(1, 1), activation='relu', init='he_uniform')(C2)
+        # F = Flatten()(C3)
+        D1 = Dense(50, activation='relu', init='he_uniform')(S)
 
         A = Input(shape=[action_dim])
-        D1A = Dense(100, activation='relu', init='he_uniform')(A)
-        
+        D1A = Dense(25, activation='relu', init='he_uniform')(A)
+
         M = merge([D1, D1A], mode='concat')
         DX1 = Dense(50, activation='relu', init='he_uniform')(M)
-        DX2 = Dense(30, activation='relu', init='he_uniform')(DX1)
+        DX2 = Dense(25, activation='relu', init='he_uniform')(DX1)
         DX3 = Dense(1, activation='linear', init=lambda shape, name: uniform(shape, scale=3e-4, name=name))(DX2)
         # different de la version TORCS, mais pour moi c'est bon
-       
+
         model = Model(input=[S,A], output=DX3)
         adam = Adam(lr=self.LEARNING_RATE)
         model.compile(loss='mse', optimizer=adam)
         # model.summary()
-        
-        # version non convolutionnelle, pour TORCS    
-        # S = Input(shape=[state_size])  
-        # A = Input(shape=[action_dim],name='action2')   
+
+        # version non convolutionnelle, pour TORCS
+        # S = Input(shape=[state_size])
+        # A = Input(shape=[action_dim],name='action2')
         # w1 = Dense(HIDDEN1_UNITS, activation='relu')(S)
-        # a1 = Dense(HIDDEN2_UNITS, activation='linear')(A) 
+        # a1 = Dense(HIDDEN2_UNITS, activation='linear')(A)
         # h1 = Dense(HIDDEN2_UNITS, activation='linear')(w1)
-        # h2 = merge([h1,a1],mode='sum')    
+        # h2 = merge([h1,a1],mode='sum')
         # h3 = Dense(HIDDEN2_UNITS, activation='relu')(h2)
-        # V = Dense(action_dim,activation='linear')(h3)   
+        # V = Dense(action_dim,activation='linear')(h3)
         # model = Model(input=[S,A],output=V)
         # adam = Adam(lr=self.LEARNING_RATE)
         # model.compile(loss='mse', optimizer=adam)
-        return model, A, S 
+        return model, A, S

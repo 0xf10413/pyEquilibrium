@@ -20,10 +20,9 @@ import tensorflow as tf
 from ReplayBuffer import ReplayBuffer
 from ActorNetwork import ActorNetwork
 from CriticNetwork import CriticNetwork
-from OU import OU
 import timeit
 
-OU = OU()       #Ornstein-Uhlenbeck Process
+
 
 
 
@@ -34,18 +33,22 @@ class LearningAlgorithm(object):
     def __init__(self):
 
             # definition des constantes de l'experience
-            self.BUFFER_SIZE = 30000 #taille du buffer
-            self.BATCH_SIZE = 16 #taille du batch
-            self.GAMMA = 0  # prise en compte du futur, parametre classique
+            self.BUFFER_SIZE = 300000 #taille du buffer
+            self.BATCH_SIZE = 64 #taille du batch
+            self.GAMMA = 0.95  # prise en compte du futur, parametre classique
             self.TAU = 0.001     #Target Network HyperParameters
             self.LRA = 0.0001    #Learning rate for Actor
             self.LRC = 0.001     #Lerning rate for Critic
             self.action_dim = 1
-            self.state_dim = 12,  #shape of sensors input
-            self.EXPLORE = 25000
-            self.episodes_number = 100 #nombre d'episode de la simulation
-            self.steps_per_episode = 300 #nombre de mvt avant passage au nouvel episode
+            self.state_dim = 9,  #shape of sensors input
+            self.EXPLORE = 100000
+            self.episodes_number = 1000 #nombre d'episode de la simulation
+            self.steps_per_episode = 1000 #nombre de mvt avant passage au nouvel episode
             self.epsilon = 1     #initial epsilon
+            self.time_since_gameover = 0
+            # 'administrativ' variables
+            self.train_indicator = 1
+            self.done = False
 
             # Tensorflow GPU optimization
             self.config = tf.ConfigProto()
@@ -77,6 +80,7 @@ class LearningAlgorithm(object):
         Indique à l'algorithme qu'un GameOver a été atteint
         """
         self.gameover = True
+        self.time_since_gameover = 0
 
     def reward(self):
         """
@@ -85,7 +89,7 @@ class LearningAlgorithm(object):
         if self.gameover:
             return -1
         else:
-            return 1
+            return self.time_since_gameover/self.steps_per_episode
 
 class DummyLearningAlgorithm(LearningAlgorithm):
     """

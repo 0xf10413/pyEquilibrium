@@ -25,6 +25,10 @@ from settings import (
         CYAN,
         )
 
+from OU import OU
+OU = OU()       #Ornstein-Uhlenbeck Process
+
+
 class Application(object):
     """
     Classe générale d'application
@@ -54,7 +58,8 @@ class Application(object):
 
             # reset de l'environnement
             self.board = Board()
-
+            self.learning_algorithm.time_since_gameover = 0
+            self.learning_algorithm.gameover = False
             # Mesure de l'avancement depuis le dernier tour de boucle
             # Bloquer si on est en avance
             delta_t = 0
@@ -82,11 +87,8 @@ class Application(object):
                         continue
 
             # Récupérer les prochaines entrées à donner à l'algorithme d'apprentissage
-            X = self.board.fetch_state()
-            s_t = X
-            print(s_t.shape)
+            s_t = self.board.fetch_state()
 
-            self.total_reward = 0
 
             for step in range(self.learning_algorithm.steps_per_episode):
 
@@ -97,9 +99,9 @@ class Application(object):
                 a_t = np.zeros([1,self.learning_algorithm.action_dim])
                 noise_t = np.zeros([1,self.learning_algorithm.action_dim])
 
-                a_t_original = self.learning_algorithm.actor.model.predict(s_t.reshape(12,), verbose=0) # to change
+                a_t_original = self.learning_algorithm.actor.model.predict(np.array([s_t]), verbose=0) # to change
 
-                noise_t[0][0] = train_indicator * max(self.learning_algorithm.epsilon, 0) * OU.function(a_t_original[0][0], 0, 0.15, 0.20)
+                noise_t[0][0] = self.learning_algorithm.train_indicator * max(self.learning_algorithm.epsilon, 0) * OU.function(a_t_original[0][0], 0, 0.15, 0.20)
 
                 a_t[0][0] = a_t_original[0][0] + noise_t[0][0]
 
@@ -122,15 +124,19 @@ class Application(object):
                     self.learning_algorithm.inform_died()
 
 
-
-                X1 = self.board.fetch_state()
+                self.learning_algorithm.time_since_gameover += 1
+                s_t1 = self.board.fetch_state()
                 r_t = self.learning_algorithm.reward()
-                s_t1 = X1
 
-                self.learning_algorithm.buff.add(s_t, a_t[0], r_t, s_t1, done) #Add replay buffer
+                if step == self.learning_algorithm.steps_per_episode-1:
+                    self.learning_algorithm.done = True
+                else:
+                    self.learning_algorithm.done = False
+
+                self.learning_algorithm.buff.add(s_t, a_t[0], r_t, s_t1, self.learning_algorithm.done) #Add replay buffer
 
                 # do the batch update
-                batch = self.learning_algorithm.buff.getBatch(BATCH_SIZE)
+                batch = self.learning_algorithm.buff.getBatch(self.learning_algorithm.BATCH_SIZE)
                 states = np.asarray([e[0] for e in batch])
                 actions = np.asarray([e[1] for e in batch])
                 rewards = np.asarray([e[2] for e in batch])
@@ -138,11 +144,13 @@ class Application(object):
                 dones = np.asarray([e[4] for e in batch])
                 y_t = np.zeros((states.shape[0],1))
 
+                target_q_values = self.learning_algorithm.critic.target_model.predict([new_states, self.learning_algorithm.actor.target_model.predict(new_states)])
+
                 for k in range(len(batch)):
                     if dones[k]:
                         y_t[k] = rewards[k]
                     else:
-                        y_t[k] = rewards[k] + GAMMA*target_q_values[k]
+                        y_t[k] = rewards[k] + self.learning_algorithm.GAMMA*target_q_values[k]
 
                 loss += self.learning_algorithm.critic.model.train_on_batch([states,actions], y_t)
                 a_for_grad = self.learning_algorithm.actor.model.predict(states)
@@ -152,18 +160,20 @@ class Application(object):
                 self.learning_algorithm.critic.target_train()
 
                 self.total_reward += r_t
-                s_t = s_t1
+                s_t = s_t1.copy()
 
-                print("Episode", i, "Step", step, "Action", a_t, "Reward", r_t, "Loss", loss)
+                print("Episode", episode, "Step", step, "Action", a_t, "Reward", r_t, "Loss", loss)
 
+                self.learning_algorithm.gameover = False
 
                 # Redessiner la scène
+                text_to_print = "feature coming soon"
                 text_to_print = self.font.render(text_to_print, 1, CYAN)
                 self.board.redraw(self.screen, text_to_print)
                 self.screen.blit(text_to_print, text_to_print.get_rect())
 
                 pg.display.flip()
 
-            print("TOTAL REWARD @ " + str(i) +"-th Episode  : Reward " + str(total_reward))
+            print("TOTAL REWARD @ " + str(episode) +"-th Episode  : Reward " + str(self.total_reward))
             print("Total Step: " + str(step))
             print("")
