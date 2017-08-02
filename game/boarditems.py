@@ -1,5 +1,4 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 from math import sin, cos, pi, hypot, atan2
 
 import numpy as np

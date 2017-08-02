@@ -1,5 +1,4 @@
-#! /usr/bin/python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 
 import sys
 import random
@@ -9,18 +8,18 @@ import numpy as np
 import pygame as pg
 from pygame.locals import *
 
-from application import Application
-from board import Board
-from application import DummyLearningAlgorithm
-from genetics import GeneticAlgorithm
-from learning_algorithm import DDPGAlgorithm
+from game.application import Application
+from game.board import Board
+from game.learning_algorithm import DummyLearningAlgorithm
+from genetics.genetics import GeneticAlgorithm
+from ddpg.Algorithm import DDPGAlgorithm
 
 random.seed(1) # Fixer l'aléatoire
 
 # Pick one !
-#algorithm = DummyLearningAlgorithm() # For human players
-algorithm = DDPGAlgorithm() # For DDPG algo
+algorithm = DummyLearningAlgorithm() # For human players
 #algorithm = GeneticAlgorithm() # For genetic algo
+#algorithm = DDPGAlgorithm() # For DDPG algo
 board = Board()
 
 application = Application(board, algorithm)

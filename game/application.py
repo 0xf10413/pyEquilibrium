@@ -1,5 +1,4 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 
 from math import pi
 
@@ -7,10 +6,10 @@ import pygame as pg
 from pygame.locals import DOUBLEBUF
 import numpy as np
 
-from board import Board
-from learning_algorithm import LearningAlgorithm
+from .board import Board
+from .learning_algorithm import LearningAlgorithm, DummyLearningAlgorithm
 
-from boarditems import HighBar, LowBar, HighBall, LowBall, GameOverException
+from .boarditems import HighBar, LowBar, HighBall, LowBall, GameOverException
 from settings import (
         WINDOW_HEIGHT,
         WINDOW_WIDTH,
@@ -100,14 +99,3 @@ class Application(object):
             self.screen.blit(text_to_print, text_to_print.get_rect())
 
             pg.display.flip()
-
-
-class DummyLearningAlgorithm(LearningAlgorithm):
-    """
-    Un algorithme d'apprentissage trivial, qui ne fait rien
-    """
-    def act(self, X, delta_t):
-        return (0, "Player")
-
-    def inform_died(self):
-        pass

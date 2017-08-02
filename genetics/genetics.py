@@ -1,11 +1,10 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 import numpy as np
 import operator
 import copy
 from random import uniform,choice
 
-from application import LearningAlgorithm
+from game.application import LearningAlgorithm
 
 from settings import (
         POPULATION_SIZE,

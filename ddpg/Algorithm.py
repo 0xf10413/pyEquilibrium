@@ -1,7 +1,4 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
-from __future__ import division
+#!/usr/bin/env python3
 
 # import pour DQL
 import numpy as np
@@ -9,38 +6,27 @@ import random
 
 import timeit
 
-class LearningAlgorithm(object):
-    pass
+import tensorflow as tf
+from keras.models import model_from_json, Model
+from keras.models import Sequential
+from keras.layers.core import Dense, Dropout, Activation, Flatten
+from keras.engine.topology import Merge
+from keras.engine.training import collect_trainable_weights
+from keras.layers.convolutional import Convolution2D
+from keras.layers import Permute, merge
+from keras.optimizers import Adam
+
+from game.learning_algorithm import LearningAlgorithm
+from .ReplayBuffer import ReplayBuffer
+from .ActorNetwork import ActorNetwork
+from .CriticNetwork import CriticNetwork
+from .OU import OU
 
 class DDPGAlgorithm(LearningAlgorithm):
-    """
-    Un algorithme d'apprentissage trivial, qui ne fait rien
-    """
-    def act(self, X, delta_t):
-        return (0, "Player")
-
-    def inform_died(self):
-        pass
-
-
     """
     Interface représentant un algorithme d'apprentissage
     """
     def __init__(self):
-        from ReplayBuffer import ReplayBuffer
-        from ActorNetwork import ActorNetwork
-        from CriticNetwork import CriticNetwork
-        import tensorflow as tf
-        from keras.models import model_from_json, Model
-        from keras.models import Sequential
-        from keras.layers.core import Dense, Dropout, Activation, Flatten
-        from keras.engine.topology import Merge
-        from keras.engine.training import collect_trainable_weights
-        from keras.layers.convolutional import Convolution2D
-        from keras.layers import Permute, merge
-        from keras.optimizers import Adam
-
-        from OU import OU
         self.OU = OU()       #Ornstein-Uhlenbeck Process
 
         # definition des constantes de l'experience

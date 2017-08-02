@@ -1,5 +1,4 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 from __future__ import division
 
 from math import pi
@@ -8,7 +7,7 @@ import pygame as pg
 from pygame.locals import DOUBLEBUF
 import numpy as np
 
-from boarditems import HighBar, LowBar, HighBall, LowBall, GameOverException
+from .boarditems import HighBar, LowBar, HighBall, LowBall, GameOverException
 from settings import (
         WINDOW_HEIGHT,
         WINDOW_WIDTH,
